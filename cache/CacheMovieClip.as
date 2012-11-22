@@ -23,10 +23,7 @@ import flash.geom.Rectangle;
  */
 public class CacheMovieClip extends Sprite
 {
-
 	private var originalMc:MovieClip;
-	private var maxWidth:Number = 0;
-	private var maxHeight:Number = 0;
 	private var _totalFrames:int = 0;
 	private var _currentFrame:int = 0;
 
@@ -34,63 +31,30 @@ public class CacheMovieClip extends Sprite
 		this.originalMc = mc;
 		this._totalFrames = this.originalMc.totalFrames;
 		this.mouseChildren = this.mouseEnabled = false;
-		getDrawInfo(this.originalMc);
 		createInternalClip(this.originalMc);
 	}
 
 	private var rectVec:Vector.<Rectangle> = new <Rectangle>[];
 	private var bitmapData:Vector.<BitmapData> = new <BitmapData>[];
-	
-	private var maxTop:Number = 0;
-	private var maxLeft:Number = 0;
-	private var maxRight:Number = 0;
-	private var maxBottom:Number = 0;
-	
-	private function getDrawInfo(mc:MovieClip):void{
-		var totalFrames:int = mc.totalFrames;
-		var rect:Rectangle;
-		
-		for(var i:int = 1; i <= totalFrames; i ++){
-			mc.gotoAndStop(i);
-			rect = mc.getBounds(mc);
-			rectVec.push(rect);
-			
-			if (rect.top < maxTop) {
-				maxTop = rect.top;
-			}
-			if (rect.left < maxLeft) {
-				maxLeft = rect.left;
-			}
-			if (rect.right > maxRight) {
-				maxRight = rect.right;
-			}
-			if (rect.bottom > maxBottom) {
-				maxBottom = rect.bottom;
-			}
-		}
-		
-		maxTop = Math.abs(maxTop);
-		maxLeft = Math.abs(maxLeft);
-		maxBottom = Math.abs(maxBottom);
-		maxRight = Math.abs(maxRight);
-		
-		maxWidth = Math.ceil(maxLeft + maxRight);
-		maxHeight = Math.ceil(maxTop + maxBottom);
-	}
-
 	private var internalBitmap:Bitmap;
 
 	private function createInternalClip(mc:MovieClip):void{
 		var totalFrames:int = mc.totalFrames;
 		var _bitD:BitmapData;
 		var _bitM:Matrix;	
+		var _rect:Rectangle;
 		
 		for(var i:int = 1; i <= mc.totalFrames; i ++){
 			mc.gotoAndStop(i);
-			_bitM = new Matrix(1, 0, 0, 1, 
-								-rectVec[i - 1].x + (maxLeft - Math.abs(rectVec[i - 1].left)), 
-								-rectVec[i - 1].y + (maxTop - Math.abs(rectVec[i - 1].top))) ;
-			_bitD = new BitmapData(maxWidth, maxHeight, true, 0);
+			_rect = mc.getBounds(mc);
+			_rect.x = Math.ceil(_rect.x);
+			_rect.y = Math.ceil(_rect.y);
+			_rect.width = Math.ceil(_rect.width);
+			_rect.height = Math.ceil(_rect.height);
+			rectVec.push(_rect);
+			
+			_bitM = new Matrix(1, 0, 0, 1, -rectVec[i - 1].x, -rectVec[i - 1].y);
+			_bitD = new BitmapData(_rect.width, _rect.height, true, 0);
 			_bitD.draw(mc, _bitM);
 			bitmapData.push(_bitD);
 		}
@@ -99,8 +63,8 @@ public class CacheMovieClip extends Sprite
 		this.addChild(internalBitmap);
 		
 		//update first frame offset
-		internalBitmap.x = rectVec[0].x - (maxLeft - Math.abs(rectVec[0].left));
-		internalBitmap.y = rectVec[0].y - (maxTop - Math.abs(rectVec[0].top));
+		internalBitmap.x = rectVec[0].x;
+		internalBitmap.y = rectVec[0].y;
 		
 		//show the first frame's clip
 		internalBitmap.bitmapData = bitmapData[_currentFrame];
@@ -183,10 +147,14 @@ public class CacheMovieClip extends Sprite
 		else {
 			_currentFrame--;
 		}
+		internalBitmap.x = rectVec[_currentFrame].x;
+		internalBitmap.y = rectVec[_currentFrame].y;
 		internalBitmap.bitmapData = bitmapData[_currentFrame];
 	}
 	
 	private function showCacheMovie(frame:int):void {
+		internalBitmap.x = rectVec[_currentFrame].x;
+		internalBitmap.y = rectVec[_currentFrame].y;
 		internalBitmap.bitmapData = bitmapData[_currentFrame];
 	}
 
